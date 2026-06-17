@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+
+  # ── Serviço 1: Backend ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend        # diretório com o Dockerfile do backend
+    # A porta 8000 NÃO é exposta ao host — ela só é acessível internamente pelo frontend via Nginx.
+    # Expor ela ao host seria desnecessário e aumentaria a superfície de ataque em produção
+    environment:
+      # Variável de ambiente para configurar o nível de log do uvicorn sem alterar o código
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    networks:
+      - app-network
+    # healthcheck permite que o docker-compose saiba quando o backend está realmente pronto,
+    # não apenas quando o processo iniciou — útil para depends_on com condição healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ── Serviço 2: Frontend (Nginx) ─────────────────────────────────────────────
+  frontend:
+    build:
+      # O contexto é a raiz do projeto para que o Dockerfile acesse tanto /frontend quanto /nginx.
+      # Sem isso, COPY ../nginx/nginx.conf falharia — o Docker proíbe caminhos fora do contexto
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      # Porta 80 do container mapeada para porta 80 do host — único ponto de entrada público.
+      # Todo o tráfego externo entra aqui; o Nginx decide se serve estático ou roteia para o backend
+      - "80:80"
+    depends_on:
+      backend:
+        # Aguarda o healthcheck do backend passar antes de iniciar o Nginx.
+        # Sem isso, o Nginx poderia tentar fazer proxy antes do uvicorn estar respondendo
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+# Rede interna isolada: os serviços se comunicam por nome (ex: "backend") sem expor portas ao host
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,33 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d2e;
+  --surface-hover: #22263a;
+  --border: #2a2d42;
+  --accent: #6c63ff;
+  --accent-light: #8b85ff;
+  --text-primary: #e8eaf6;
+  --text-secondary: #9094b0;
+  --green: #4caf78;
+  --red: #f06060;
+  --yellow: #f5c842;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
