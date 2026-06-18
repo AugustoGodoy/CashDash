@@ -1,5 +1,10 @@
 # diario de desenvolvimento — cash dash
 
+
+primeiramente defini o tema do projeto, os requsitos e tecnlogias a serem utilizadas, apos isso revisei os requisitos no ava e pedi para ia gerar a estrtura de pastas e um front em react, apos isso fui construindo o back end e docker.
+
+Muitas coisas eu tinha duvida mas assim que eu começava a desenvolver eu tinha as sugestoes do tab complete que ajuda bastante no desenvolvimento... 
+
 registro dos problemas que apareceram durante o desenvolvimento e como resolvi cada um.
 
 ---
@@ -62,9 +67,9 @@ com isso, se o arquivo nao existir, o nginx serve o `index.html` e o react assum
 
 ## entrada 4 — frontend subia antes do backend estar pronto
 
-em alguns `docker compose up` os cards apareciam com erro logo de inicio, mas rodando de novo funcionava.
+em alguns `docker compose up` os cards apareciam com erro no inicio, mas rodando de novo funcionava.
 
-o `depends_on` padrao so espera o container iniciar, nao espera o servico dentro dele estar respondendo. dependendo da velocidade, o nginx subia e tentava fazer proxy antes do uvicorn terminar de inicializar.
+o `depends_on` padrao so espera o container iniciar, nao espera o serviço dentro dele estar respondendo. dependendo da velocidade, o nginx subia e tentava fazer proxy antes do uvicorn terminar de inicializar.
 
 adicionei um `healthcheck` no backend que bate no `/health` do fastapi, e configurei o frontend pra esperar `service_healthy`:
 
@@ -78,6 +83,16 @@ o nginx agora so sobe depois que o `/health` ja esta retornando 200.
 
 ---
 
+## entrada 4.5 — dificuldade pra criar o cotacoes.py
+
+na parte do backend eu travei bastante no `cotacoes.py`. nao sabia como estruturar os endpoints no fastapi, como chamar uma api externa de dentro do python nem como tratar os erros de forma que o frontend recebesse algo util.
+
+recorri a ia pra me ajudar a montar esse arquivo. expliquei o que eu queria — tres endpoints: um pra cotacao atual, um por moeda base e um de historico — e a ia gerou a estrutura usando `httpx` pra chamadas async e `APIRouter` pra organizar as rotas separado do `main.py`.
+
+o que aprendi com isso: o `httpx.AsyncClient` funciona com `async/await`, que faz sentido dentro do fastapi que e async por natureza. o `APIRouter` serve pra modularizar as rotas em vez de jogar tudo no `main.py`. e o padrao `raise_for_status()` + `except HTTPStatusError` e a forma certa de capturar falha de api externa sem deixar o servidor cair com 500 generico.
+
+---
+
 ## entrada 5 — cotacoes com 502 mesmo com tudo healthy
 
 os dois containers apareciam `Up (healthy)`, o frontend abria, mas as cotacoes nao carregavam — erro 502.
@@ -88,7 +103,7 @@ backend-1   | INFO:     172.21.0.3:34712 - "GET /api/v1/cotacoes/BRL HTTP/1.1" 5
 backend-1   | INFO:     172.21.0.3:52964 - "GET /api/v1/historico/USD HTTP/1.1" 502 Bad Gateway
 ```
 
-o `/health` continuava respondendo 200, entao o uvicorn estava ok. o problema estava dentro dos endpoints de cotacao. fui ver o `cotacoes.py` e lembrei que o fastapi relanca a falha da api externa como 502. testei a url manualmente e vi que `api.frankfurter.app` nao estava mais respondendo — o dominio correto e `api.frankfurter.dev`.
+o `/health` continuava respondendo 200, entao o uvicorn estava ok. o problema estava dentro dos endpoints de cotacao. fui ver o `cotacoes.py` e lembrei que o fastapi joga novamente a falha da api externa como 502. testei a url manualmente e vi que `api.frankfurter.app` nao estava mais respondendo... o dominio correto mudou pra `api.frankfurter.dev`.
 
 ajustei no codigo:
 
@@ -100,7 +115,7 @@ FRANKFURTER_BASE = "https://api.frankfurter.app"
 FRANKFURTER_BASE = "https://api.frankfurter.dev/v1"
 ```
 
-rodei `docker compose up --build` pra rebuildar o backend e as cotacoes voltaram a funcionar.
+rodei novamente `docker compose up --build` pra rebuildar e bombou 
 
 ---
 

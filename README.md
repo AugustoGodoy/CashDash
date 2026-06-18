@@ -112,17 +112,19 @@ cash-dash/
 
 ### O que foi gerado com IA
 
-- criar a estrutura DE PASTAS inicial do projeto (criar as pastas de acordo com o que decidi usar/tema)
-- debug para entender o problema de rota da api e correção no back
-- front end praticamente inteiro, apenas defini algumas coisas ux/ui
+- estrutura de pastas inicial do projeto
+- `cotacoes.py` inteiro — travei nessa parte, nao sabia usar fastapi com chamadas async pra api externa, pedi ajuda pra ia explicar e gerar
+- front end praticamente todo, defini tema visual e o que queria exibir
 - nginx com proxy reverso e SPA fallback
+- debug de alguns erros de configuracao do docker
+- evidencias.md com os logs certos
 
 ### o que aprendi e modifiquei
 
 o principal aprendizado foi entender como o docker orquestra multiplos servicos juntos. o `docker-compose.yml` define o backend (fastapi) e o frontend (nginx servindo o react) como servicos separados, cada um no seu container, e o docker gerencia a rede interna entre eles.
 
-no backend aprendi: como estruturar as rotas, como fazer chamadas http pra uma api externa com httpx e como configurar o cors. tambem entendi por que o uvicorn precisa do `--host 0.0.0.0` dentro de um container — sem isso ele so escuta o loopback interno e o nginx nao consegue se conectar. aprendi tb que os arquivos `__init__.py` vazios dentro das pastas do projeto sao necessarios pro python tratar essas pastas como pacotes... sem eles o uvicorn nao consegue importar os modulos e lanca erro na inicializacao.
+no backend aprendi: como estruturar rotas com `APIRouter` no fastapi, como fazer chamadas async pra api externa com `httpx` e como tratar erros de api externa com `raise_for_status()` + `except HTTPStatusError` — essa parte foi assistida por ia porque eu nao sabia como montar isso. tambem entendi por que o uvicorn precisa do `--host 0.0.0.0` dentro de um container — sem isso ele so escuta o loopback interno e o nginx nao consegue se conectar. aprendi tb que os arquivos `__init__.py` vazios sao necessarios pro python tratar as pastas como pacotes — sem eles o uvicorn nao consegue importar os modulos.
 
-o front foi praticamente todo gerado por ia. defini o tema visual e as informacoes que queria exibir, tecnologia que ela deveria usar e fui ajustando.
+o front foi praticamente todo gerado por ia. defini o tema visual e as informacoes que queria exibir, tecnologia que ela deveria usar e fui fazendo ajustes pontuais de ux ui.
 
 as decisoes de docker que entendi e consegui justificar: escolha da imagem base, estrategia de cache de camadas no dockerfile, multi-stage build no frontend e como o `depends_on` com healthcheck garante que os servicos sobem na ordem certa.
